@@ -56,16 +56,6 @@ const App = () => {
   }, []);
 
   const handle = (setter) => (e) => setter(cleanNumber(e.target.value));
-const resetValores = () => {
-  setBsMonto("");
-  setPesos("");
-  setUsd("");
-  setBs("");
-  setBsToUsd("");
-  setUsdToBsConv("");
-  setCopToUsd("");
-  setUsdToCop("");
-};
 
   const pesosMontoCalculado = useMemo(() => {
     const bsVal = parseFloat(bsMonto.replace(/,/g, ".")) || 0;
@@ -136,55 +126,30 @@ const resetValores = () => {
 
       <div className="fixed-width-container">
         {/* BLOQUE NARANJA BOLIVARES -> PESOS */}
-      <div className="form-container monto-section">
-  {/* Encabezado con botón */}
-  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-    <h1 className="title2" style={{ margin: 4 }}>MONTO A PAGAR</h1>
-    <button
-      onClick={resetValores}
-      style={{
-        backgroundColor: "red",
-        color: "white",
-        border: "none",
-        borderRadius: "10%",
-        width: "24px",
-        height: "24px",
-        fontSize: "14px",
-        fontWeight: "bold",
-        cursor: "pointer",
-        lineHeight: "1",
-      
-      }}
-      title="Reiniciar valores"
-    >
-      C
-    </button>
-  </div>
-
-  {/* Inputs BOLÍVARES y PESOS */}
-  <div className="input-group dual-input">
-    <div>
-      <input
-        className="input monto-input"
-        type="text"
-        value={bsMonto}
-        onChange={handle(setBsMonto)}
-        placeholder="0,00"
-      />
-      <div className="label-below2">BOLÍVARES</div>
-    </div>
-    <div>
-      <input
-        className="input monto-input2"
-        type="text"
-        value={pesosMontoCalculado}
-        readOnly
-      />
-      <div className="label-below2">PESOS</div>
-    </div>
-  </div>
-</div>
-
+        <div className="form-container monto-section">
+          <h1 className="title2">MONTO A PAGAR</h1>
+          <div className="input-group dual-input">
+            <div>
+              <input
+                className="input monto-input"
+                type="text"
+                value={bsMonto}
+                onChange={handle(setBsMonto)}
+                placeholder="0,00"
+              />
+              <div className="label-below2">BOLÍVARES</div>
+            </div>
+            <div>
+              <input
+                className="input monto-input2"
+                type="text"
+                value={pesosMontoCalculado}
+                readOnly
+              />
+              <div className="label-below2">PESOS</div>
+            </div>
+          </div>
+        </div>
 
         {/* INGRESOS */}
         <div className="form-container">
