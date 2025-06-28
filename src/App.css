@@ -155,7 +155,7 @@ body {
 
 .dual-input {
   display: flex;
-  gap: 0px;
+  gap: 10px;
   justify-content: space-between;
 }
 
@@ -324,7 +324,7 @@ body {
 .faltante-group {
   display: flex;
   justify-content: space-between;
-  gap: 10px;
+  gap: 3px;
   flex-wrap: wrap;
 }
 .faltante-item {
@@ -347,6 +347,11 @@ body {
 }
 
 .dual-input {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.dual-input2 {
   display: flex;
   gap: 0px;
   flex-wrap: wrap;
