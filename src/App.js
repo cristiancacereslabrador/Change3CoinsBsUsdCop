@@ -141,24 +141,34 @@ const resetValores = () => {
   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
     <h1 className="title2" style={{ margin: 4 }}>MONTO A PAGAR</h1>
     <button
-      onClick={resetValores}
-      style={{
-        backgroundColor: "red",
-        color: "white",
-        border: "none",
-        borderRadius: "10%",
-        width: "24px",
-        height: "24px",
-        fontSize: "14px",
-        fontWeight: "bold",
-        cursor: "pointer",
-        lineHeight: "1",
-      
-      }}
-      title="Reiniciar valores"
-    >
-      C
-    </button>
+  onClick={resetValores}
+  style={{
+    backgroundColor: "red",
+    color: "white",
+    border: "none",
+    borderRadius: "8px",
+    width: "24px",
+    height: "24px",
+    fontSize: "14px",
+    fontWeight: "bold",
+    cursor: "pointer",
+    lineHeight: "1",
+    boxShadow: "2px 2px 5px rgba(0, 0, 0, 0.3)",
+    transition: "transform 0.1s ease-in-out, box-shadow 0.1s ease-in-out",
+  }}
+  onMouseDown={(e) => {
+    e.target.style.transform = "translateY(2px)";
+    e.target.style.boxShadow = "1px 1px 2px rgba(0, 0, 0, 0.2)";
+  }}
+  onMouseUp={(e) => {
+    e.target.style.transform = "translateY(0)";
+    e.target.style.boxShadow = "2px 2px 5px rgba(0, 0, 0, 0.3)";
+  }}
+  title="Reiniciar valores"
+>
+  C
+</button>
+
   </div>
 
   {/* Inputs BOLÍVARES y PESOS */}
@@ -251,7 +261,7 @@ const resetValores = () => {
             <div className="faltante-group">
               <div className="faltante-item">
                 <input
-                  className="input secondary low result-box"
+                  className="input secondary low3 result-box"
                   value={faltanteBs}
                   readOnly
                 />
@@ -259,7 +269,7 @@ const resetValores = () => {
               </div>
               <div className="faltante-item">
                 <input
-                  className="input secondary low result-box"
+                  className="input secondary low3 result-box"
                   value={faltanteStr}
                   readOnly
                 />
@@ -267,7 +277,7 @@ const resetValores = () => {
               </div>
               <div className="faltante-item">
                 <input
-                  className="input secondary low result-box"
+                  className="input secondary low3 result-box"
                   value={faltanteUsd}
                   readOnly
                 />
