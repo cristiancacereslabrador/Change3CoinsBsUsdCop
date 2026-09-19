@@ -189,15 +189,18 @@ const App = () => {
     return format(toNumber(copToBs) / rate);
   }, [copToBs, bsPer1kPesos]);
 
-  const bgUrl = `${process.env.PUBLIC_URL || ""}/background_hor.png`;
-  const bgUrlVert = `${process.env.PUBLIC_URL || ""}/background_ver.png`;
+  const publicAsset = (file) => {
+    const base = process.env.PUBLIC_URL || "";
+    if (!base || base === ".") return `/${file}`;
+    return `${base.replace(/\/$/, "")}/${file}`;
+  };
 
   return (
     <div
       className="app-shell"
       style={{
-        "--bg-hor": `url(${bgUrl})`,
-        "--bg-ver": `url(${bgUrlVert})`,
+        "--bg-hor": `url("${publicAsset("background_hor.png")}")`,
+        "--bg-ver": `url("${publicAsset("background_ver.png")}")`,
       }}
     >
       <div className="app-container">
