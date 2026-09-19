@@ -216,8 +216,9 @@ const App = () => {
               className="btn-clear"
               onClick={resetValores}
               title="Reiniciar valores"
+              aria-label="Limpiar"
             >
-              Limpiar
+              C
             </button>
           </div>
           <div className="pair">
