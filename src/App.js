@@ -8,12 +8,41 @@ const format = (n) =>
     maximumFractionDigits: 2,
   }).format(n);
 
+const toNumber = (v) => parseFloat(String(v).replace(/,/g, ".")) || 0;
+
 const cleanNumber = (v) =>
   v
     .replace(/[^0-9.,]/g, "")
     .replace(/,/g, ".")
     .replace(/^(\d*\.\d{0,2}).*$/, "$1")
     .replace(/^0+(?=\d)/, "");
+
+const NumberField = ({
+  label,
+  value,
+  onChange,
+  placeholder = "0,00",
+  readOnly = false,
+  suffix,
+  className = "",
+}) => (
+  <label className={`field ${readOnly ? "is-readonly" : ""} ${className}`}>
+    {label ? <span className="field-label">{label}</span> : null}
+    <span className={`field-box ${suffix ? "has-suffix" : ""}`}>
+      <input
+        type="text"
+        inputMode="decimal"
+        autoComplete="off"
+        enterKeyHint="done"
+        readOnly={readOnly}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+      />
+      {suffix ? <span className="field-suffix">{suffix}</span> : null}
+    </span>
+  </label>
+);
 
 const App = () => {
   const [usdToPesos, setUsdToPesos] = useState("1");
@@ -32,22 +61,36 @@ const App = () => {
   const [usdToBsConv, setUsdToBsConv] = useState("");
   const [copToUsd, setCopToUsd] = useState("");
   const [usdToCop, setUsdToCop] = useState("");
+  const [bsToCop, setBsToCop] = useState("");
+  const [copToBs, setCopToBs] = useState("");
 
   useEffect(() => {
     (async () => {
       try {
-        const { data } = await axios.get("https://api.exchangerate-api.com/v4/latest/USD");
-        const usdToCop = parseFloat(data.rates.COP.toFixed(2));
-        setUsdToPesos(usdToCop.toString());
+        const { data } = await axios.get(
+          "https://api.exchangerate-api.com/v4/latest/USD"
+        );
+        const usdToCopRate = parseFloat(data.rates.COP.toFixed(2));
+        setUsdToPesos(usdToCopRate.toString());
         const usdToBsInicial = parseFloat(data.rates.VES.toFixed(2));
         setUsdToBs(usdToBsInicial.toString());
 
         const [y, m, d] = data.date.split("-");
         const meses = [
-          "enero", "febrero", "marzo", "abril", "mayo", "junio",
-          "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"
+          "enero",
+          "febrero",
+          "marzo",
+          "abril",
+          "mayo",
+          "junio",
+          "julio",
+          "agosto",
+          "septiembre",
+          "octubre",
+          "noviembre",
+          "diciembre",
         ];
-        setLastUpdate(`${parseInt(d)} de ${meses[parseInt(m) - 1]}`);
+        setLastUpdate(`${parseInt(d, 10)} de ${meses[parseInt(m, 10) - 1]}`);
         setActYear(y);
       } catch (err) {
         console.error("Error obteniendo tasa:", err);
@@ -56,22 +99,24 @@ const App = () => {
   }, []);
 
   const handle = (setter) => (e) => setter(cleanNumber(e.target.value));
-const resetValores = () => {
-  setBsMonto("");
-  setPesos("");
-  setUsd("");
-  setBs("");
-  setBsToUsd("");
-  setUsdToBsConv("");
-  setCopToUsd("");
-  setUsdToCop("");
-};
+
+  const resetValores = () => {
+    setBsMonto("");
+    setPesos("");
+    setUsd("");
+    setBs("");
+    setBsToUsd("");
+    setUsdToBsConv("");
+    setCopToUsd("");
+    setUsdToCop("");
+    setBsToCop("");
+    setCopToBs("");
+  };
 
   const pesosMontoCalculado = useMemo(() => {
-    const bsVal = parseFloat(bsMonto.replace(/,/g, ".")) || 0;
+    const bsVal = toNumber(bsMonto);
     const rBs1k = parseFloat(bsPer1kPesos) || 1;
-    const res = format(bsVal * rBs1k);
-    return res;
+    return format(bsVal * rBs1k);
   }, [bsMonto, bsPer1kPesos]);
 
   const {
@@ -82,13 +127,15 @@ const resetValores = () => {
     faltanteUsd,
     faltanteStr,
     vueltoStr,
+    faltanteNum,
+    vueltoNum,
   } = useMemo(() => {
     const rUsdPesos = parseFloat(usdToPesos) || 0;
     const rUsdBs = parseFloat(usdToBs) || 1;
-    const usdVal = parseFloat(usd.replaceAll(",", ".").replace(/[^\d.]/g, "")) || 0;
-    const pesosVal = parseFloat(pesos.replace(/,/g, ".")) || 0;
-    const bsVal = parseFloat(bs.replace(/,/g, ".")) || 0;
-    const bsMontoVal = parseFloat(bsMonto.replace(/,/g, ".")) || 0;
+    const usdVal = toNumber(usd);
+    const pesosVal = toNumber(pesos);
+    const bsVal = toNumber(bs);
+    const bsMontoVal = toNumber(bsMonto);
     const rBs1k = parseFloat(bsPer1kPesos) || 1;
 
     const montoObjetivoEnPesos = bsMontoVal * rBs1k;
@@ -104,398 +151,240 @@ const resetValores = () => {
       bsPesosStr: format(bsPesos),
       totalPesosStr: format(total),
       faltanteStr: format(falt),
-      faltanteBs: format((falt * rUsdBs) / rUsdPesos),
-      faltanteUsd: format(falt / rUsdPesos),
+      faltanteBs: format(rUsdPesos ? (falt * rUsdBs) / rUsdPesos : 0),
+      faltanteUsd: format(rUsdPesos ? falt / rUsdPesos : 0),
       vueltoStr: format(vuelto),
+      faltanteNum: falt,
+      vueltoNum: vuelto,
     };
   }, [usd, pesos, bs, bsMonto, usdToPesos, usdToBs, bsPer1kPesos]);
 
-  const convertBsToUsd = () => {
-    const bsVal = parseFloat(bsToUsd) || 0;
-    return usdToBs ? format(bsVal / parseFloat(usdToBs)) : "0.00";
-  };
+  const convertBsToUsd = useMemo(() => {
+    const rate = parseFloat(usdToBs);
+    return rate ? format(toNumber(bsToUsd) / rate) : "0,00";
+  }, [bsToUsd, usdToBs]);
 
-  const convertUsdToBs = () => {
-    const usdVal = parseFloat(usdToBsConv) || 0;
-    return usdToBs ? format(usdVal * parseFloat(usdToBs)) : "0.00";
-  };
+  const convertUsdToBs = useMemo(() => {
+    const rate = parseFloat(usdToBs);
+    return rate ? format(toNumber(usdToBsConv) * rate) : "0,00";
+  }, [usdToBsConv, usdToBs]);
 
-  const convertCopToUsd = () => {
-    const copVal = parseFloat(copToUsd) || 0;
-    return usdToPesos ? format(copVal / parseFloat(usdToPesos)) : "0.00";
-  };
+  const convertCopToUsd = useMemo(() => {
+    const rate = parseFloat(usdToPesos);
+    return rate ? format(toNumber(copToUsd) / rate) : "0,00";
+  }, [copToUsd, usdToPesos]);
 
-  const convertUsdToCop = () => {
-    const usdVal = parseFloat(usdToCop) || 0;
-    return usdToPesos ? format(usdVal * parseFloat(usdToPesos)) : "0.00";
-  };
+  const convertUsdToCop = useMemo(() => {
+    const rate = parseFloat(usdToPesos);
+    return rate ? format(toNumber(usdToCop) * rate) : "0,00";
+  }, [usdToCop, usdToPesos]);
+
+  const convertBsToCop = useMemo(() => {
+    const rate = parseFloat(bsPer1kPesos) || 1;
+    return format(toNumber(bsToCop) * rate);
+  }, [bsToCop, bsPer1kPesos]);
+
+  const convertCopToBs = useMemo(() => {
+    const rate = parseFloat(bsPer1kPesos) || 1;
+    return format(toNumber(copToBs) / rate);
+  }, [copToBs, bsPer1kPesos]);
+
+  const bgUrl = `${process.env.PUBLIC_URL || ""}/background_hor.png`;
+  const bgUrlVert = `${process.env.PUBLIC_URL || ""}/background_ver.png`;
 
   return (
-    <div className="app-container">
-      <h1 className="title">BS · PESOS · USD</h1>
+    <div
+      className="app-shell"
+      style={{
+        "--bg-hor": `url(${bgUrl})`,
+        "--bg-ver": `url(${bgUrlVert})`,
+      }}
+    >
+      <div className="app-container">
+        <header className="app-header">
+          <h1 className="title">BS · PESOS · USD</h1>
+        </header>
 
-      <div className="fixed-width-container">
-        {/* BLOQUE NARANJA BOLIVARES -> PESOS */}
-      <div className="form-container monto-section">
-  {/* Encabezado con botón */}
-  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-    <h1 className="title2" style={{ margin: 4 }}>MONTO A PAGAR</h1>
-    <button
-  onClick={resetValores}
-  style={{
-    backgroundColor: "red",
-    color: "white",
-    border: "none",
-    borderRadius: "8px",
-    width: "24px",
-    height: "24px",
-    fontSize: "14px",
-    fontWeight: "bold",
-    cursor: "pointer",
-    lineHeight: "1",
-    boxShadow: "2px 2px 5px rgba(0, 0, 0, 0.3)",
-    transition: "transform 0.1s ease-in-out, box-shadow 0.1s ease-in-out",
-  }}
-  onMouseDown={(e) => {
-    e.target.style.transform = "translateY(2px)";
-    e.target.style.boxShadow = "1px 1px 2px rgba(0, 0, 0, 0.2)";
-  }}
-  onMouseUp={(e) => {
-    e.target.style.transform = "translateY(0)";
-    e.target.style.boxShadow = "2px 2px 5px rgba(0, 0, 0, 0.3)";
-  }}
-  title="Reiniciar valores"
->
-  C
-</button>
-
-  </div>
-
-  {/* Inputs BOLÍVARES y PESOS */}
-  <div className="input-group dual-input">
-    <div>
-      <input
-        className="input monto-input"
-        type="text"
-        value={bsMonto}
-        onChange={handle(setBsMonto)}
-        placeholder="0,00"
-      />
-      <div className="label-below2">BOLÍVARES</div>
-    </div>
-    <div>
-      <input
-        className="input monto-input2"
-        type="text"
-        value={pesosMontoCalculado}
-        readOnly
-      />
-      <div className="label-below2">PESOS</div>
-    </div>
-  </div>
-</div>
-
-
-        {/* INGRESOS */}
-        <div className="form-container">
-          <div className="input-group">
-            <div className="label-below">PESOS RECIBIDOS</div>
-            <div style={{ position: "relative", display: "inline-block", width: "100%" }}>
-              <input
-                className="input low"
-                type="text"
-                value={pesos}
-                onChange={handle(setPesos)}
-                placeholder="0,00"
-                style={{ paddingRight: "60px" }}
-              />
-              <span className="unit-label">PESOS</span>
-            </div>
+        <section className="card card-pay">
+          <div className="card-head">
+            <h2>Monto a pagar</h2>
+            <button
+              type="button"
+              className="btn-clear"
+              onClick={resetValores}
+              title="Reiniciar valores"
+            >
+              Limpiar
+            </button>
           </div>
-
-          <div className="input-group">
-            <div className="label-below">DÓLARES RECIBIDOS</div>
-            <div className="input-with-label">
-              <input
-                className="input low2"
-                type="text"
-                value={usd}
-                onChange={handle(setUsd)}
-                placeholder="0,00"
-              />
-              <div className="converted-box">{usdPesosStr} PESOS</div>
-            </div>
-          </div>
-
-          <div className="input-group">
-            <div className="label-below">BOLÍVARES RECIBIDOS</div>
-            <div className="input-with-label">
-              <input
-                className="input low2"
-                type="text"
-                value={bs}
-                onChange={handle(setBs)}
-                placeholder="0,00"
-              />
-              <div className="converted-box">{bsPesosStr} PESOS</div>
-            </div>
-          </div>
-        </div>
-
-        {/* TOTALES */}
-        <div className="form-container">
-          <div className="input-group">
-            <label style={{ color: "white" }}>TOTAL RECIBIDO</label>
-            <div className="input-with-unit">
-              <input
-                className="input secondary low result-box"
-                value={totalPesosStr}
-                readOnly
-              />
-              <span className="unit-label">PESOS</span>
-            </div>
-          </div>
-
-          <div className="input-group">
-            <label style={{ color: "white" }}>DINERO FALTANTE</label>
-            <div className="faltante-group">
-              <div className="faltante-item">
-                <input
-                  className="input secondary low3 result-box"
-                  value={faltanteBs}
-                  readOnly
-                />
-                <div className="faltante-label">BOLÍVARES</div>
-              </div>
-              <div className="faltante-item">
-                <input
-                  className="input secondary low3 result-box"
-                  value={faltanteStr}
-                  readOnly
-                />
-                <div className="faltante-label">PESOS</div>
-              </div>
-              <div className="faltante-item">
-                <input
-                  className="input secondary low3 result-box"
-                  value={faltanteUsd}
-                  readOnly
-                />
-                <div className="faltante-label">DÓLARES</div>
-              </div>
-            </div>
-          </div>
-
-          <div className="input-group">
-            <label style={{ color: "white" }}>TOTAL VUELTO</label>
-            <div className="input-with-unit">
-              <input
-                className="input secondary low result-box"
-                value={vueltoStr}
-                readOnly
-              />
-              <span className="unit-label">PESOS</span>
-            </div>
-          </div>
-        </div>
-
-        {/* TASAS DE CAMBIO */}
-        <hr style={{ height: "4px", backgroundColor: "#fff", border: "none" }} />
-        <p className="title-tc">TASAS DE CAMBIO</p>
-        <div className="exchange-info">
-          <p className="inline-rate">
-            1 USD =
-            <input
-              className="rate-input"
-              type="text"
-              value={usdToPesos}
-              onChange={handle(setUsdToPesos)}
+          <div className="pair">
+            <NumberField
+              label="Bolívares"
+              value={bsMonto}
+              onChange={handle(setBsMonto)}
             />
-            PESOS
-          </p>
+            <NumberField
+              label="Pesos"
+              value={pesosMontoCalculado}
+              readOnly
+            />
+          </div>
+        </section>
 
-          <div className="inline-rate-row">
-            <p className="inline-rate">
-              1 PESO =
+        <section className="card card-receive">
+          <h2>Dinero recibido</h2>
+          <NumberField
+            label="Pesos recibidos"
+            value={pesos}
+            onChange={handle(setPesos)}
+            suffix="PESOS"
+          />
+          <div className="pair">
+            <NumberField
+              label="Dólares recibidos"
+              value={usd}
+              onChange={handle(setUsd)}
+            />
+            <NumberField label="En pesos" value={usdPesosStr} readOnly suffix="PESOS" />
+          </div>
+          <div className="pair">
+            <NumberField
+              label="Bolívares recibidos"
+              value={bs}
+              onChange={handle(setBs)}
+            />
+            <NumberField label="En pesos" value={bsPesosStr} readOnly suffix="PESOS" />
+          </div>
+        </section>
+
+        <section className="card card-summary">
+          <h2>Resumen</h2>
+          <NumberField
+            label="Total recibido"
+            value={totalPesosStr}
+            readOnly
+            suffix="PESOS"
+          />
+
+          <div className={`highlight ${faltanteNum > 0 ? "is-on is-faltante" : ""}`}>
+            <p className="highlight-title">Dinero faltante</p>
+            <div className="trio">
+              <NumberField label="Bolívares" value={faltanteBs} readOnly />
+              <NumberField label="Pesos" value={faltanteStr} readOnly />
+              <NumberField label="Dólares" value={faltanteUsd} readOnly />
+            </div>
+          </div>
+
+          <div className={`highlight ${vueltoNum > 0 ? "is-on is-vuelto" : ""}`}>
+            <NumberField
+              label="Total vuelto"
+              value={vueltoStr}
+              readOnly
+              suffix="PESOS"
+            />
+          </div>
+        </section>
+
+        <section className="card card-rates">
+          <h2>Tasas de cambio</h2>
+          <div className="rate-grid">
+            <label className="rate-row">
+              <span className="rate-prefix">1 USD =</span>
               <input
-                className="rate-input small"
+                className="rate-input"
                 type="text"
+                inputMode="decimal"
+                autoComplete="off"
+                value={usdToPesos}
+                onChange={handle(setUsdToPesos)}
+              />
+              <span className="rate-unit">PESOS</span>
+            </label>
+            <label className="rate-row">
+              <span className="rate-prefix">1 PESO =</span>
+              <input
+                className="rate-input"
+                type="text"
+                inputMode="decimal"
+                autoComplete="off"
                 value={bsPer1kPesos}
                 onChange={handle(setBsPer1k)}
               />
-              BS.
-            </p>
-            <p className="inline-rate">
-              1 USD =
+              <span className="rate-unit">BS</span>
+            </label>
+            <label className="rate-row">
+              <span className="rate-prefix">1 USD =</span>
               <input
-                className="rate-input small2"
+                className="rate-input"
                 type="text"
+                inputMode="decimal"
+                autoComplete="off"
                 value={usdToBs}
                 onChange={handle(setUsdToBs)}
               />
-              BS.
-            </p>
+              <span className="rate-unit">BS</span>
+            </label>
           </div>
-        </div>
+        </section>
 
-        {/* CONVERSORES */}
-       {/* ... código anterior ... */}
+        <section className="card card-convert">
+          <h2>Conversores</h2>
+          <div className="convert-list">
+            <div className="convert-item">
+              <p>Bolívares a dólares</p>
+              <div className="pair">
+                <NumberField value={bsToUsd} onChange={handle(setBsToUsd)} />
+                <NumberField value={convertBsToUsd} readOnly suffix="USD" />
+              </div>
+            </div>
+            <div className="convert-item">
+              <p>Dólares a bolívares</p>
+              <div className="pair">
+                <NumberField value={usdToBsConv} onChange={handle(setUsdToBsConv)} />
+                <NumberField value={convertUsdToBs} readOnly suffix="BS" />
+              </div>
+            </div>
+            <div className="convert-item">
+              <p>Pesos a dólares</p>
+              <div className="pair">
+                <NumberField value={copToUsd} onChange={handle(setCopToUsd)} />
+                <NumberField value={convertCopToUsd} readOnly suffix="USD" />
+              </div>
+            </div>
+            <div className="convert-item">
+              <p>Dólares a pesos</p>
+              <div className="pair">
+                <NumberField value={usdToCop} onChange={handle(setUsdToCop)} />
+                <NumberField value={convertUsdToCop} readOnly suffix="PESOS" />
+              </div>
+            </div>
+            <div className="convert-item">
+              <p>Bolívares a pesos</p>
+              <div className="pair">
+                <NumberField value={bsToCop} onChange={handle(setBsToCop)} />
+                <NumberField value={convertBsToCop} readOnly suffix="PESOS" />
+              </div>
+            </div>
+            <div className="convert-item">
+              <p>Pesos a bolívares</p>
+              <div className="pair">
+                <NumberField value={copToBs} onChange={handle(setCopToBs)} />
+                <NumberField value={convertCopToBs} readOnly suffix="BS" />
+              </div>
+            </div>
+          </div>
+        </section>
 
-{/* CONVERSORES - SECCIÓN VERDE */}
-<hr style={{ height: "4px", backgroundColor: "#fff", border: "none" }} />
-<div className="form-container monto-section" style={{ backgroundColor: "#007f3d" }}>
-  {/* BOLÍVARES A DÓLARES */}
-  <div className="label-below4">BOLÍVARES A DÓLARES</div>
-  <div className="input-group dual-input">
-    <div>
-      <input
-        className="input monto-input"
-        type="text"
-        value={bsToUsd}
-        onChange={handle(setBsToUsd)}
-        placeholder="0,00"
-      />
-    </div>
-    <div className="input-with-unit">
-      <input
-        className="input monto-input3"
-        type="text"
-        value={convertBsToUsd()}
-        readOnly
-      />
-      <span className="unit-label inside">DÓLARES</span>
-    </div>
-  </div>
-
-  {/* DÓLARES A BOLÍVARES */}
-  <div className="label-below4">DÓLARES A BOLÍVARES</div>
-  <div className="input-group dual-input" style={{ marginBottom: "10px" }}>
-    <div>
-      <input
-        className="input monto-input"
-        type="text"
-        value={usdToBsConv}
-        onChange={handle(setUsdToBsConv)}
-        placeholder="0,00"
-      />
-    </div>
-    <div className="input-with-unit">
-      <input
-        className="input monto-input3"
-        type="text"
-        value={convertUsdToBs()}
-        readOnly
-      />
-      <span className="unit-label inside">BOLÍVARES</span>
-    </div>
-  </div>
-
-  {/* PESOS A DÓLARES */}
-  <div className="label-below4">PESOS A DÓLARES</div>
-  <div className="input-group dual-input" style={{ marginTop: "10px" }}>
-    <div>
-      <input
-        className="input monto-input"
-        type="text"
-        value={copToUsd}
-        onChange={handle(setCopToUsd)}
-        placeholder="0,00"
-      />
-    </div>
-    <div className="input-with-unit">
-      <input
-        className="input monto-input3"
-        type="text"
-        value={convertCopToUsd()}
-        readOnly
-      />
-      <span className="unit-label inside">DÓLARES</span>
-    </div>
-  </div>
-
-  {/* DÓLARES A PESOS */}
-  <div className="label-below4">DÓLARES A PESOS</div>
-  <div className="input-group dual-input" style={{ marginTop: "1px" }}>
-    <div>
-      <input
-        className="input monto-input"
-        type="text"
-        value={usdToCop}
-        onChange={handle(setUsdToCop)}
-        placeholder="0,00"
-      />
-    </div>
-    <div className="input-with-unit">
-      <input
-        className="input monto-input3"
-        type="text"
-        value={convertUsdToCop()}
-        readOnly
-      />
-      <span className="unit-label inside">PESOS</span>
-    </div>
-  </div>
-
-  {/* BOLÍVARES A PESOS */}
-  <div className="label-below4">BOLÍVARES A PESOS</div>
-  <div className="input-group dual-input" style={{ marginTop: "1px" }}>
-    <div>
-      <input
-        className="input monto-input"
-        type="text"
-        value={bs}
-        onChange={handle(setBs)}
-        placeholder="0,00"
-      />
-    </div>
-    <div className="input-with-unit">
-      <input
-        className="input monto-input3"
-        type="text"
-        value={bsPesosStr}
-        readOnly
-      />
-      <span className="unit-label inside">PESOS</span>
-    </div>
-  </div>
-
-  {/* PESOS A BOLÍVARES */}
-  <div className="label-below4">PESOS A BOLÍVARES</div>
-  <div className="input-group dual-input" style={{ marginTop: "1px" }}>
-    <div>
-      <input
-        className="input monto-input"
-        type="text"
-        value={pesos}
-        onChange={handle(setPesos)}
-        placeholder="0,00"
-      />
-    </div>
-    <div className="input-with-unit">
-      <input
-        className="input monto-input3"
-        type="text"
-        value={format((parseFloat(pesos.replace(/,/g, ".")) || 0) / (parseFloat(bsPer1kPesos) || 1))}
-        readOnly
-      />
-      <span className="unit-label inside">BOLÍVARES</span>
-    </div>
-  </div>
-</div>
-
-
-        <div className="act">
-          <p>Actualizado al {lastUpdate}</p>
-        </div>
-        <div className="creator">
+        <footer className="app-footer">
+          <p>{lastUpdate ? `Actualizado al ${lastUpdate}` : "Tasas listas para editar"}</p>
           <p>
-            &copy; {actYear}&nbsp;
+            © {actYear || new Date().getFullYear()}{" "}
             <a href="https://wa.me/51980675172" className="name">
-              Cristian Cáceres&nbsp;
+              Cristian Cáceres
               <i className="fab fa-whatsapp whatsapp-icon" />
             </a>
           </p>
-        </div>
+        </footer>
       </div>
     </div>
   );
